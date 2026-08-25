@@ -1,24 +1,25 @@
-name: 📈 TCS Tick & Depth Collector
+name: 📈 Nifty 1s Bar Collector
 on:
   workflow_dispatch:
+
 jobs:
   collect:
     name: Collect Market Data
     runs-on: ubuntu-latest
-    # GitHub hard-kills any job at 360 minutes no matter what's set here -
-    # if TCS's session runs longer than that end-to-end, chain two sessions
-    # the same way the NIFTY 1s pipeline does.
-    timeout-minutes: 355
+    timeout-minutes: 375
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
+
       - name: 🐍 Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
+
       - name: 📦 Install dependencies
         run: pip install -r requirements.txt
+
       - name: 🚀 Run collector
         env:
           DHAN_CLIENT_ID: ${{ secrets.DHAN_CLIENT_ID }}
@@ -27,13 +28,14 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
-        run: python dhan_tcs_nt8_export.py
-      - name: 📁 Upload tick + depth files as artifact (backup)
+        run: python collector.py
+
+      - name: 📁 Upload daily + combined CSVs as artifact (backup)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tcs-depth-${{ github.run_id }}
+          name: nifty-bars-${{ github.run_id }}
           path: |
-            TCS_tick.txt
-            TCS_depth_L2.txt
+            daily_bars/*.csv
+            candles_1s_all.csv
           retention-days: 30
